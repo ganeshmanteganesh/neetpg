@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>StudySmart - Student Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    form {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 350px;
+    }
+    h2 {
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    #msg {
+      text-align: center;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <form id="login-form">
+    <h2>🔐 Student Login</h2>
+    <input type="email" id="email" placeholder="Enter your email" required />
+    <input type="password" id="password" placeholder="Enter your password" required />
+    <button type="submit">Login</button>
+    <p id="msg"></p>
+  </form>
+
+  <script>
+    // ✅ Initialize Supabase FIRST
+    const supabaseUrl = "https://iqwfqgywdtncbqhplvop.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxd2ZxZ3l3ZHRuY2JxaHBsdm9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxNzY3ODMsImV4cCI6MjA2ODc1Mjc4M30.BlecH2Kr5Bx0q4h72EEAe7W7PiCBCTfglXJ-pQwpEvk"; // Replace this
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    document.getElementById("login-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("msg");
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+          msg.textContent = "❌ " + error.message;
+          msg.style.color = "red";
+        } else {
+          // ✅ Save student info to localStorage
+          localStorage.setItem("student", JSON.stringify(data.user));
+          msg.textContent = "✅ Login successful!";
+          msg.style.color = "green";
+          setTimeout(() => {
+            window.location.href = "student.html"; // Redirect
+          }, 1500);
+        }
+      } catch (err) {
+        msg.textContent = "Unexpected error. Please try again.";
+        msg.style.color = "red";
+      }
+    });
+  </script>
+
+</body>
+</html>

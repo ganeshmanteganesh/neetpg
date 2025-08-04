@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📚 Student Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #f0f4ff, #e3f2fd);
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color: white;
+      padding: 25px;
+      text-align: center;
+      font-size: 26px;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .container {
+      padding: 30px 20px;
+    }
+    h2 {
+      font-size: 22px;
+      color: #333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .subject-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+      padding: 0 10px;
+    }
+    .subject-card {
+      background: white;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 18px;
+      font-weight: 500;
+      color: #444;
+      text-align: center;
+    }
+    .subject-card:hover {
+      transform: translateY(-5px);
+      background: linear-gradient(to right, #e0f7fa, #e1f5fe);
+      color: #0056b3;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 50px;
+      gap: 40px;
+    }
+    .logout-btn {
+      padding: 16px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: 0.3s ease;
+      width: 220px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .logout-btn:hover {
+      transform: scale(1.05);
+    }
+    /* Color Variants for Buttons */
+    .logout-btn:nth-child(1) { background: linear-gradient(to right, #8e2de2, #4a00e0); color: #fff; }
+    .logout-btn:nth-child(2) { background: linear-gradient(to right, #43cea2, #185a9d); color: #fff; }
+    .logout-btn:nth-child(3) { background: linear-gradient(to right, #f7971e, #ffd200); color: #000; }
+    .logout-btn:nth-child(4) { background: linear-gradient(to right, #f953c6, #b91d73); color: #fff; }
+    .logout-btn:nth-child(5) { background: linear-gradient(to right, #00c9ff, #92fe9d); color: #000; }
+    .logout-btn:nth-child(6) { background: linear-gradient(to right, #ff512f, #dd2476); color: #fff; }
+    .logout-btn:nth-child(7) { background: linear-gradient(to right, #654ea3, #eaafc8); color: #fff; }
+    .logout-btn:last-child    { background: linear-gradient(to right, #141e30, #243b55); color: #fff; }
+    @media (max-width: 768px) {
+      .actions {
+        flex-direction: column;
+        align-items: center;
+      }
+      .logout-btn {
+        width: 100%;
+        max-width: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>Welcome, <span id="studentName">Student</span> 👋</header>
+
+  <div class="container">
+    <h2>Select a Subject</h2>
+    <div class="subject-grid" id="subjects">
+     
+    <div class="actions">
+      <button class="logout-btn" onclick="window.location.href='medicine.html'">📖 MEDICINE </button>
+      
+      <button class="logout-btn" onclick="window.location.href=''">🧪 Practical Corner</button>
+      <button class="logout-btn" onclick="window.location.href=''">📝 Notes Corner</button>
+      <button class="logout-btn" onclick="logout()">🚪 Log Out</button>
+    </div>
+  </div>
+
+  <script type="module">
+    const studentEmail = localStorage.getItem("student");
+
+    if (!studentEmail) {
+      alert("Please login first.");
+      window.location.href = "index.html";
+    } else {
+      document.getElementById("studentName").textContent = studentEmail.split("@")[0];
+    }
+
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabase = createClient(
+      'https://iqwfqgywdtncbqhplvop.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxd2ZxZ3l3ZHRuY2JxaHBsdm9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxNzY3ODMsImV4cCI6MjA2ODc1Mjc4M30.BlecH2Kr5Bx0q4h72EEAe7W7PiCBCTfglXJ-pQwpEvk'
+    );
+
+    async function loadOrInsertQuestions(subject) {
+      console.log("Selected subject:", subject); // Debug log
+      localStorage.setItem("subject", subject); // ✅ Always overwrite
+
+      const { data: existing, error: existError } = await supabase
+        .from("results")
+        .select("question_id")
+        .eq("student", studentEmail)
+        .eq("subject", subject);
+
+      if (existError) {
+        console.error(existError);
+        alert("Error checking existing results.");
+        return;
+      }
+
+      const existingIds = existing.map(row => row.question_id);
+
+      const { data: allQuestions, error: fetchError } = await supabase
+        .from(subject) // ✅ Uses selected subject
+        .select("*");
+
+      if (fetchError) {
+        console.error(fetchError);
+        alert("Error loading questions from subject.");
+        return;
+      }
+
+      const missingQuestions = allQuestions.filter(q => !existingIds.includes(q.id));
+
+      if (missingQuestions.length > 0) {
+        const toInsert = missingQuestions.map(q => ({
+          student: studentEmail,
+          subject: subject,
+          question_id: q.id,
+          question: q.question,
+          optiona: q.optiona,
+          optionb: q.optionb,
+          optionc: q.optionc,
+          optiond: q.optiond,
+          a: q.a,
+          b: null,
+          c: null,
+          d: q.d || null
+        }));
+
+        const { error: insertError } = await supabase
+          .from("results")
+          .insert(toInsert);
+
+        if (insertError) {
+          console.error(insertError);
+          alert("Error inserting questions.");
+          return;
+        }
+      }
+
+      window.location.href = "quiz.html";
+    }
+
+    function logout() {
+      localStorage.removeItem("student");
+      localStorage.removeItem("subject"); // ✅ Clear subject on logout
+      window.location.href = "index.html";
+    }
+
+    window.loadOrInsertQuestions = loadOrInsertQuestions;
+    window.logout = logout;
+  </script>
+</body>
+</html>
