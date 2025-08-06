@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📝 Highlight Revisions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body { font-family: sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 { text-align: center; }
+    select { font-size: 1rem; padding: 6px; margin-bottom: 20px; width: 100%; }
+    .highlight { background: yellow; padding: 10px; margin: 10px 0; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>📚 Revision Highlights</h1>
+  <select id="subjectSelect">
+    <option value="">-- Select Subject --</option>
+  </select>
+  <div id="highlightsContainer"></div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabaseUrl = 'https://iqwfqgywdtncbqhplvop.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxd2ZxZ3l3ZHRuY2JxaHBsdm9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxNzY3ODMsImV4cCI6MjA2ODc1Mjc4M30.BlecH2Kr5Bx0q4h72EEAe7W7PiCBCTfglXJ-pQwpEvk'; // Use your key
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const subjectSelect = document.getElementById('subjectSelect');
+    const highlightsContainer = document.getElementById('highlightsContainer');
+
+    // Fetch distinct subjects and populate dropdown
+    async function loadSubjects() {
+      const { data, error } = await supabase
+  .from('highlights')
+  .select('subject')
+  .neq('subject', null);
+
+if (error) {
+  console.error('Error fetching subjects:', error);
+} else {
+  // Remove duplicates in JS
+  const uniqueSubjects = [...new Set(data.map(item => item.subject))];
+  console.log('Unique subjects:', uniqueSubjects);
+}
+
+      data.forEach(row => {
+        const option = document.createElement('option');
+        option.value = row.subject;
+        option.textContent = row.subject;
+        subjectSelect.appendChild(option);
+      });
+    }
+
+    // Fetch highlights for the selected subject
+    async function loadHighlights(subject) {
+      highlightsContainer.innerHTML = '';
+
+      const { data, error } = await supabase
+        .from('highlights')
+        .select('highlight_content')
+        .eq('subject', subject);
+
+      if (error) {
+        console.error('Error fetching highlights:', error);
+        return;
+      }
+
+      if (data.length === 0) {
+        highlightsContainer.innerHTML = '<p>No highlights found for this subject.</p>';
+        return;
+      }
+
+      data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'highlight';
+        div.innerHTML = item.highlight_content; // Assumes highlight_content contains HTML
+        highlightsContainer.appendChild(div);
+      });
+    }
+
+    subjectSelect.addEventListener('change', () => {
+      const selectedSubject = subjectSelect.value;
+      if (selectedSubject) {
+        loadHighlights(selectedSubject);
+      } else {
+        highlightsContainer.innerHTML = '';
+      }
+    });
+
+    loadSubjects();
+  </script>
+</body>
+</html>
