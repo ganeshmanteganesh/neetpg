@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📘 Upload Text File - Chunked</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background-color: #f7f7f7;
+      color: #333;
+    }
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    progress {
+      width: 100%;
+      height: 20px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📘 Upload Text File (500-word Chunks)</h2>
+
+  <label for="fileInput">Choose a .txt file:</label>
+  <input type="file" id="fileInput" accept=".txt" />
+
+  <label for="bookTitle">Book Title:</label>
+  <input type="text" id="bookTitle" placeholder="Enter book title" />
+
+  <label for="subject">Subject (optional):</label>
+  <input type="text" id="subject" placeholder="e.g. Medicine, Surgery" />
+
+  <button id="uploadBtn">Upload</button>
+
+  <progress id="progressBar" value="0" max="100"></progress>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    // 🔐 Replace with your Supabase project credentials
+    const supabaseUrl = 'https://iqwfqgywdtncbqhplvop.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxd2ZxZ3l3ZHRuY2JxaHBsdm9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxNzY3ODMsImV4cCI6MjA2ODc1Mjc4M30.BlecH2Kr5Bx0q4h72EEAe7W7PiCBCTfglXJ-pQwpEvk';
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const fileInput = document.getElementById("fileInput");
+      const bookTitleInput = document.getElementById("bookTitle");
+      const subjectInput = document.getElementById("subject");
+      const progressBar = document.getElementById("progressBar");
+      const uploadBtn = document.getElementById("uploadBtn");
+
+      uploadBtn.addEventListener("click", async () => {
+        const file = fileInput.files[0];
+        const bookTitle = bookTitleInput.value.trim();
+        const subject = subjectInput.value.trim() || null;
+
+        if (!file || !bookTitle) {
+          alert("Please select a file and enter the book title.");
+          return;
+        }
+
+        try {
+          const text = await file.text();
+          const words = text.split(/\s+/);
+          const chunkSize = 500;
+          const totalChunks = Math.ceil(words.length / chunkSize);
+
+          for (let i = 0; i < totalChunks; i++) {
+            const chunkWords = words.slice(i * chunkSize, (i + 1) * chunkSize);
+            const chunkText = chunkWords.join(" ");
+
+            const { error } = await supabase.from("book_pages").insert([
+              {
+                book_title: bookTitle,
+                page_no: i + 1,
+                content: chunkText,
+                subject: subject,
+                highlights: [],
+              }
+            ]);
+
+            if (error) {
+  console.error(`❌ Skipping chunk ${i + 1} due to error: ${error.message}`);
+  continue; // skip to the next chunk
+}
+            
+
+            progressBar.value = ((i + 1) / totalChunks) * 100;
+          }
+
+          alert("✅ Upload complete!");
+          progressBar.value = 100;
+        } catch (err) {
+          console.error("Unexpected error:", err);
+          alert("Unexpected error occurred. See console for details.");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
