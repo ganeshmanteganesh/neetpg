@@ -60,7 +60,7 @@ subjectSelect.addEventListener('change', async function () {
 
   pages = data;  
   currentPageIndex = 0;  
-  showPage();  
+  showPage();       
 });  
 
 function showPage() {  
@@ -156,6 +156,59 @@ jumpPageBtn.addEventListener('click', () => {
   showPage();
 });
 
+  
+  
+  // === 🔍 SEARCH FUNCTIONALITY ===
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+const searchResultsDiv = document.getElementById('searchResults');
+
+searchBtn.addEventListener('click', async () => {
+  const keyword = searchInput.value.trim();
+  if (!keyword || !currentSubject) {
+    alert("❌ Please enter a keyword and select a subject.");
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('book_pages')
+    .select('page_no, content')
+    .eq('subject', currentSubject);
+
+  if (error) {
+    alert("❌ Error searching pages: " + error.message);
+    return;
+  }
+
+  const matchingPages = data.filter(p => p.content.toLowerCase().includes(keyword.toLowerCase()));
+
+  if (matchingPages.length === 0) {
+    searchResultsDiv.innerHTML = `<p>No results found for "<strong>${keyword}</strong>"</p>`;
+    return;
+  }
+
+  searchResultsDiv.innerHTML = `<h4>Results for "<strong>${keyword}</strong>":</h4>`;
+  matchingPages.forEach(p => {
+    const btn = document.createElement('button');
+    btn.textContent = `Page ${p.page_no}`;
+    btn.addEventListener('click', () => {
+      const idx = pages.findIndex(pg => pg.page_no === p.page_no);
+      if (idx !== -1) {
+        currentPageIndex = idx;
+        showPage();
+        searchResultsDiv.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+    searchResultsDiv.appendChild(btn);
+  });
+});
+  
+  
+  
+  
+  
+  
+  
   </script>    <style>  
   body {   
     font-family: Arial;   
@@ -207,10 +260,16 @@ jumpPageBtn.addEventListener('click', () => {
   <div style="margin-top: 10px;">
   <input type="number" id="jumpPageInput" placeholder="Enter page #" min="1" style="width: 100px;" />
   <button id="jumpPageBtn">🔢 Jump</button>
+    <hr />
+<h3>🔍 Search in Current Subject</h3>
+<input type="text" id="searchInput" placeholder="Enter keyword to search..." style="width: 60%; padding: 5px;" />
+<button id="searchBtn">🔍 Search</button>
+
+<div id="searchResults" style="margin-top: 15px;"></div>
 </div>
 
 <button id="saveHighlightBtn" class="floating-btn">💾 Save Highlight</button>
 
 </body>  
-</html>  Add one feature page wise jump
+</html>  
 
